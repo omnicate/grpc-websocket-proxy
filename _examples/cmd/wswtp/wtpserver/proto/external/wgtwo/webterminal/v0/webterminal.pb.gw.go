@@ -74,6 +74,74 @@ func request_WebTerminalService_Pipe_0(ctx context.Context, marshaler runtime.Ma
 	return stream, metadata, nil
 }
 
+func request_WebTerminalService_Stream_0(ctx context.Context, marshaler runtime.Marshaler, client WebTerminalServiceClient, req *http.Request, pathParams map[string]string) (WebTerminalService_StreamClient, runtime.ServerMetadata, error) {
+	var protoReq Empty
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	stream, err := client.Stream(ctx, &protoReq)
+	if err != nil {
+		return nil, metadata, err
+	}
+	header, err := stream.Header()
+	if err != nil {
+		return nil, metadata, err
+	}
+	metadata.HeaderMD = header
+	return stream, metadata, nil
+
+}
+
+func request_WebTerminalService_Goose_0(ctx context.Context, marshaler runtime.Marshaler, client WebTerminalServiceClient, req *http.Request, pathParams map[string]string) (WebTerminalService_GooseClient, runtime.ServerMetadata, error) {
+	var metadata runtime.ServerMetadata
+	stream, err := client.Goose(ctx)
+	if err != nil {
+		grpclog.Infof("Failed to start streaming: %v", err)
+		return nil, metadata, err
+	}
+	dec := marshaler.NewDecoder(req.Body)
+	handleSend := func() error {
+		var protoReq Offer
+		err := dec.Decode(&protoReq)
+		if err == io.EOF {
+			return err
+		}
+		if err != nil {
+			grpclog.Infof("Failed to decode request: %v", err)
+			return err
+		}
+		if err := stream.Send(&protoReq); err != nil {
+			grpclog.Infof("Failed to send request: %v", err)
+			return err
+		}
+		return nil
+	}
+	go func() {
+		for {
+			if err := handleSend(); err != nil {
+				break
+			}
+		}
+		if err := stream.CloseSend(); err != nil {
+			grpclog.Infof("Failed to terminate client stream: %v", err)
+		}
+	}()
+	header, err := stream.Header()
+	if err != nil {
+		grpclog.Infof("Failed to get header from client: %v", err)
+		return nil, metadata, err
+	}
+	metadata.HeaderMD = header
+	return stream, metadata, nil
+}
+
 func request_WebTerminalService_MultiPipe_0(ctx context.Context, marshaler runtime.Marshaler, client WebTerminalServiceClient, req *http.Request, pathParams map[string]string) (WebTerminalService_MultiPipeClient, runtime.ServerMetadata, error) {
 	var metadata runtime.ServerMetadata
 	stream, err := client.MultiPipe(ctx)
@@ -123,7 +191,21 @@ func request_WebTerminalService_MultiPipe_0(ctx context.Context, marshaler runti
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterWebTerminalServiceHandlerFromEndpoint instead.
 func RegisterWebTerminalServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server WebTerminalServiceServer) error {
 
-	mux.Handle("POST", pattern_WebTerminalService_Pipe_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_WebTerminalService_Pipe_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
+		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+		return
+	})
+
+	mux.Handle("POST", pattern_WebTerminalService_Stream_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
+		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+		return
+	})
+
+	mux.Handle("POST", pattern_WebTerminalService_Goose_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		err := status.Error(codes.Unimplemented, "streaming calls are not yet supported in the in-process transport")
 		_, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -178,7 +260,7 @@ func RegisterWebTerminalServiceHandler(ctx context.Context, mux *runtime.ServeMu
 // "WebTerminalServiceClient" to call the correct interceptors.
 func RegisterWebTerminalServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client WebTerminalServiceClient) error {
 
-	mux.Handle("POST", pattern_WebTerminalService_Pipe_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_WebTerminalService_Pipe_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
@@ -197,6 +279,50 @@ func RegisterWebTerminalServiceHandlerClient(ctx context.Context, mux *runtime.S
 		}
 
 		forward_WebTerminalService_Pipe_0(annotatedContext, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_WebTerminalService_Stream_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/wgtwo.webterminal.v0.WebTerminalService/Stream", runtime.WithHTTPPathPattern("/pipe2"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_WebTerminalService_Stream_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_WebTerminalService_Stream_0(annotatedContext, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_WebTerminalService_Goose_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/wgtwo.webterminal.v0.WebTerminalService/Goose", runtime.WithHTTPPathPattern("/goose"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_WebTerminalService_Goose_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_WebTerminalService_Goose_0(annotatedContext, mux, outboundMarshaler, w, req, func() (proto.Message, error) { return resp.Recv() }, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -228,11 +354,19 @@ func RegisterWebTerminalServiceHandlerClient(ctx context.Context, mux *runtime.S
 var (
 	pattern_WebTerminalService_Pipe_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"pipe"}, ""))
 
+	pattern_WebTerminalService_Stream_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"pipe2"}, ""))
+
+	pattern_WebTerminalService_Goose_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"goose"}, ""))
+
 	pattern_WebTerminalService_MultiPipe_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"multipipe"}, ""))
 )
 
 var (
 	forward_WebTerminalService_Pipe_0 = runtime.ForwardResponseStream
+
+	forward_WebTerminalService_Stream_0 = runtime.ForwardResponseStream
+
+	forward_WebTerminalService_Goose_0 = runtime.ForwardResponseStream
 
 	forward_WebTerminalService_MultiPipe_0 = runtime.ForwardResponseStream
 )

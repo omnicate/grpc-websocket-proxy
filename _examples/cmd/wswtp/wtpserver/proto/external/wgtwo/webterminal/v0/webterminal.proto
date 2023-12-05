@@ -21,15 +21,25 @@ package wgtwo.webterminal.v0;
 import "proto/external/wgtwo/annotations/annotations.proto";
 import "proto/external/wgtwo/common/v0/phonenumber.proto";
 
-option java_outer_classname = "WebTerminalProto";
-option java_multiple_files = true;
-option java_package = "com.wgtwo.api.v0.webterminal";
-option go_package = "proto/external/wgtwo/webterminal/v0";
+// option java_outer_classname = "WebTerminalProto";
+// option java_multiple_files = true;
+// option java_package = "com.wgtwo.api.v0.webterminal";
+// option go_package = "proto/external/wgtwo/webterminal/v0";
 
 // Gateway for WebTerminalProtocol. Requires user's consent to answer and initiate calls.
+message Empty{}
+
 service WebTerminalService {
   rpc Pipe (stream WebTerminalMessage) returns (stream WebTerminalMessage) {
-    option (google.api.http) = {post: "/pipe", body: "*"};
+    option (google.api.http) = {get: "/pipe"};
+    option (scope) = "call.control.answer_and_initiate";
+  };
+  rpc Stream(Empty) returns (stream WebTerminalMessage) {
+    option (google.api.http) = {post: "/pipe2", body: "*"};
+  }
+
+  rpc Goose (stream Offer) returns (stream Offer) {
+    option (google.api.http) = {post: "/goose", body: "*"};
     option (scope) = "call.control.answer_and_initiate";
   };
 

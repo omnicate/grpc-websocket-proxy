@@ -230,7 +230,7 @@ func RegisterEchoServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/echoserver.EchoService/Stream", runtime.WithHTTPPathPattern("/echo"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/echoserver.EchoService/Stream", runtime.WithHTTPPathPattern("/echouni"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
@@ -274,7 +274,7 @@ func RegisterEchoServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux
 var (
 	pattern_EchoService_Echo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"echo"}, ""))
 
-	pattern_EchoService_Stream_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"echo"}, ""))
+	pattern_EchoService_Stream_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"echouni"}, ""))
 
 	pattern_EchoService_Heartbeats_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"heartbeats"}, ""))
 )
