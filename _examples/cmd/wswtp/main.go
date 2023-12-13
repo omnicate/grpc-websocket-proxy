@@ -17,16 +17,40 @@ import (
 	_ "golang.org/x/net/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	grpcMetadata "google.golang.org/grpc/metadata"
+	//	grpcMetadata "google.golang.org/grpc/metadata"
 )
 
 var (
-	grpcAddr    = flag.String("grpcaddr", ":8001", "listen grpc addr")
-	httpAddr    = flag.String("addr", ":8000", "listen http addr")
-	debugAddr   = flag.String("debugaddr", ":8002", "listen debug addr")
-	accessToken = flag.String("wg2_token", "token", "WG2 api access tocken")
+	grpcAddr       = flag.String("grpcaddr", "", "listen grpc addr") // ""
+	httpAddr       = flag.String("addr", ":8000", "listen http addr")
+	debugAddr      = flag.String("debugaddr", ":8002", "listen debug addr")
+	wg2AccessToken = flag.String("wg2_token", "token", "WG2 api access tocken")
+	wg2Msisdn      = flag.String("wg2_msisdn", "", "WG2 Sub msisdn")
+	wg2ApiAddress  = flag.String("wg2_api_address", "", "WG2 Api address")
 )
+var defaultHeadersToForward = map[string]bool{
+	"Origin":     true,
+	"origin":     true,
+	"Referer":    true,
+	"referer":    true,
+	"wg2-msisdn": true,
+}
 
+type bearerTokenCreds struct {
+	token  string
+	msisdn string
+}
+
+func (c *bearerTokenCreds) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+	return map[string]string{
+		"Authorization": "Bearer " + c.token,
+		"wg2-msisdn":    c.msisdn,
+	}, nil
+}
+
+func (c *bearerTokenCreds) RequireTransportSecurity() bool {
+	return false
+}
 func run() error {
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
@@ -40,13 +64,16 @@ func run() error {
 	// opts := []grpc.DialOption{grpc.WithInsecure()}
 
 	conf := credentials.NewTLS(&tls.Config{InsecureSkipVerify: true})
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(conf), grpc.WithBlock()}
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(conf),
+		grpc.WithPerRPCCredentials(&bearerTokenCreds{token: *wg2AccessToken, msisdn: *wg2Msisdn}),
+	}
 	// Add token to gRPC Request.
-	ctx = grpcMetadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+*accessToken)
-	ctx = grpcMetadata.AppendToOutgoingContext(ctx, "wg2-msisdn", "4799999120")
 
-	err := v0.RegisterWebTerminalServiceHandlerFromEndpoint(ctx, mux, "api-gateway.dub.dev.wgtwo.com:443", opts)
-	//opts = []grpc.DialOption{grpc.WithInsecure()}
+	err := v0.RegisterWebTerminalServiceHandlerFromEndpoint(ctx, mux, *wg2ApiAddress, opts)
+	opts = []grpc.DialOption{grpc.WithInsecure(),
+		grpc.WithPerRPCCredentials(&bearerTokenCreds{token: *wg2AccessToken, msisdn: *wg2Msisdn}),
+	}
 	//err := v0.RegisterWebTerminalServiceHandlerFromEndpoint(ctx, mux, *grpcAddr, opts)
 	if err != nil {
 		return err
@@ -56,9 +83,13 @@ func run() error {
 
 	l := log.New()
 	l.SetLevel(log.DebugLevel)
-	l.Debugln("hei from debug logger")
-
-	http.ListenAndServe(*httpAddr, wsproxy.WebsocketProxy(mux, wsproxy.WithLogger(l)))
+	l.Debugln("hei from debug logger", *wg2Msisdn)
+	http.ListenAndServe(*httpAddr, wsproxy.WebsocketProxy(mux,
+		wsproxy.WithLogger(l),
+		wsproxy.WithRequestMutator(
+			func(incoming *http.Request, outgoing *http.Request) *http.Request {
+				return outgoing
+			})))
 	return nil
 }
 

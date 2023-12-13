@@ -23,8 +23,6 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type WebTerminalServiceClient interface {
 	Pipe(ctx context.Context, opts ...grpc.CallOption) (WebTerminalService_PipeClient, error)
-	Stream(ctx context.Context, in *Empty, opts ...grpc.CallOption) (WebTerminalService_StreamClient, error)
-	Goose(ctx context.Context, opts ...grpc.CallOption) (WebTerminalService_GooseClient, error)
 	MultiPipe(ctx context.Context, opts ...grpc.CallOption) (WebTerminalService_MultiPipeClient, error)
 }
 
@@ -67,71 +65,8 @@ func (x *webTerminalServicePipeClient) Recv() (*WebTerminalMessage, error) {
 	return m, nil
 }
 
-func (c *webTerminalServiceClient) Stream(ctx context.Context, in *Empty, opts ...grpc.CallOption) (WebTerminalService_StreamClient, error) {
-	stream, err := c.cc.NewStream(ctx, &WebTerminalService_ServiceDesc.Streams[1], "/wgtwo.webterminal.v0.WebTerminalService/Stream", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &webTerminalServiceStreamClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type WebTerminalService_StreamClient interface {
-	Recv() (*WebTerminalMessage, error)
-	grpc.ClientStream
-}
-
-type webTerminalServiceStreamClient struct {
-	grpc.ClientStream
-}
-
-func (x *webTerminalServiceStreamClient) Recv() (*WebTerminalMessage, error) {
-	m := new(WebTerminalMessage)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *webTerminalServiceClient) Goose(ctx context.Context, opts ...grpc.CallOption) (WebTerminalService_GooseClient, error) {
-	stream, err := c.cc.NewStream(ctx, &WebTerminalService_ServiceDesc.Streams[2], "/wgtwo.webterminal.v0.WebTerminalService/Goose", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &webTerminalServiceGooseClient{stream}
-	return x, nil
-}
-
-type WebTerminalService_GooseClient interface {
-	Send(*Offer) error
-	Recv() (*Offer, error)
-	grpc.ClientStream
-}
-
-type webTerminalServiceGooseClient struct {
-	grpc.ClientStream
-}
-
-func (x *webTerminalServiceGooseClient) Send(m *Offer) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *webTerminalServiceGooseClient) Recv() (*Offer, error) {
-	m := new(Offer)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 func (c *webTerminalServiceClient) MultiPipe(ctx context.Context, opts ...grpc.CallOption) (WebTerminalService_MultiPipeClient, error) {
-	stream, err := c.cc.NewStream(ctx, &WebTerminalService_ServiceDesc.Streams[3], "/wgtwo.webterminal.v0.WebTerminalService/MultiPipe", opts...)
+	stream, err := c.cc.NewStream(ctx, &WebTerminalService_ServiceDesc.Streams[1], "/wgtwo.webterminal.v0.WebTerminalService/MultiPipe", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -166,8 +101,6 @@ func (x *webTerminalServiceMultiPipeClient) Recv() (*WebTerminalMessage, error) 
 // for forward compatibility
 type WebTerminalServiceServer interface {
 	Pipe(WebTerminalService_PipeServer) error
-	Stream(*Empty, WebTerminalService_StreamServer) error
-	Goose(WebTerminalService_GooseServer) error
 	MultiPipe(WebTerminalService_MultiPipeServer) error
 	mustEmbedUnimplementedWebTerminalServiceServer()
 }
@@ -178,12 +111,6 @@ type UnimplementedWebTerminalServiceServer struct {
 
 func (UnimplementedWebTerminalServiceServer) Pipe(WebTerminalService_PipeServer) error {
 	return status.Errorf(codes.Unimplemented, "method Pipe not implemented")
-}
-func (UnimplementedWebTerminalServiceServer) Stream(*Empty, WebTerminalService_StreamServer) error {
-	return status.Errorf(codes.Unimplemented, "method Stream not implemented")
-}
-func (UnimplementedWebTerminalServiceServer) Goose(WebTerminalService_GooseServer) error {
-	return status.Errorf(codes.Unimplemented, "method Goose not implemented")
 }
 func (UnimplementedWebTerminalServiceServer) MultiPipe(WebTerminalService_MultiPipeServer) error {
 	return status.Errorf(codes.Unimplemented, "method MultiPipe not implemented")
@@ -227,53 +154,6 @@ func (x *webTerminalServicePipeServer) Recv() (*WebTerminalMessage, error) {
 	return m, nil
 }
 
-func _WebTerminalService_Stream_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(Empty)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(WebTerminalServiceServer).Stream(m, &webTerminalServiceStreamServer{stream})
-}
-
-type WebTerminalService_StreamServer interface {
-	Send(*WebTerminalMessage) error
-	grpc.ServerStream
-}
-
-type webTerminalServiceStreamServer struct {
-	grpc.ServerStream
-}
-
-func (x *webTerminalServiceStreamServer) Send(m *WebTerminalMessage) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func _WebTerminalService_Goose_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(WebTerminalServiceServer).Goose(&webTerminalServiceGooseServer{stream})
-}
-
-type WebTerminalService_GooseServer interface {
-	Send(*Offer) error
-	Recv() (*Offer, error)
-	grpc.ServerStream
-}
-
-type webTerminalServiceGooseServer struct {
-	grpc.ServerStream
-}
-
-func (x *webTerminalServiceGooseServer) Send(m *Offer) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *webTerminalServiceGooseServer) Recv() (*Offer, error) {
-	m := new(Offer)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 func _WebTerminalService_MultiPipe_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(WebTerminalServiceServer).MultiPipe(&webTerminalServiceMultiPipeServer{stream})
 }
@@ -311,17 +191,6 @@ var WebTerminalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			StreamName:    "Pipe",
 			Handler:       _WebTerminalService_Pipe_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
-		},
-		{
-			StreamName:    "Stream",
-			Handler:       _WebTerminalService_Stream_Handler,
-			ServerStreams: true,
-		},
-		{
-			StreamName:    "Goose",
-			Handler:       _WebTerminalService_Goose_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},

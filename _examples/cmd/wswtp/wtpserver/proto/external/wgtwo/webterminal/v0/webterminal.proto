@@ -34,17 +34,8 @@ service WebTerminalService {
     option (google.api.http) = {get: "/pipe"};
     option (scope) = "call.control.answer_and_initiate";
   };
-  rpc Stream(Empty) returns (stream WebTerminalMessage) {
-    option (google.api.http) = {post: "/pipe2", body: "*"};
-  }
-
-  rpc Goose (stream Offer) returns (stream Offer) {
-    option (google.api.http) = {post: "/goose", body: "*"};
-    option (scope) = "call.control.answer_and_initiate";
-  };
-
   rpc MultiPipe (stream WebTerminalMessage) returns (stream WebTerminalMessage) {
-    option (google.api.http) = {post: "/multipipe", body: "*"};
+    option (google.api.http) = {get: "/multipipe"};
     option (scope) = "call.control.answer_and_initiate";
   };
 }
